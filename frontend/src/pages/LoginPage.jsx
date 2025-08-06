@@ -1,10 +1,72 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import BASE_URL from "../apis";
+import GoogleAuth from "../components/googleOauth";
 import "./LoginPage.css";
 
 const SignupSection = ({setstate}) => {
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords don't match!");
+      return;
+    }
+
+    const passwordRequirements = checkPasswordStrength(formData.password);
+    const isValidPassword = Object.values(passwordRequirements).every(req => req);
+    
+    if (!isValidPassword) {
+      alert("Password doesn't meet all requirements!");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${BASE_URL}/travel_buddy/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          username: formData.email, 
+          password: formData.password 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('Account created successfully! Please login.');
+        setstate(0); // Switch to login form
+      } else {
+        alert(data.message || 'Registration failed');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert('Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const checkPasswordStrength = (pass) => {
     const hasUpperCase = /[A-Z]/.test(pass);
@@ -22,97 +84,174 @@ const SignupSection = ({setstate}) => {
     };
   };
 
-  const passwordRequirements = checkPasswordStrength(password);
+  const passwordRequirements = checkPasswordStrength(formData.password);
 
   return (
     <div className="form-content">
-      <div className="input-group">
-        <input type="text" placeholder="First Name" className="input-field" />
-        <input type="text" placeholder="Last Name" className="input-field" />
-      </div>
-
-      <input type="email" placeholder="Email Address" className="input-field" />
-
-      <input
-        type="password"
-        placeholder="Create Password"
-        className="input-field"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-
-      <ul className="password-requirements">
-        <li
-          className={passwordRequirements.isLongEnough ? "requirement-met" : ""}
-        >
-          At least 8 characters
-        </li>
-        <li
-          className={passwordRequirements.hasUpperCase ? "requirement-met" : ""}
-        >
-          One uppercase letter
-        </li>
-        <li
-          className={passwordRequirements.hasLowerCase ? "requirement-met" : ""}
-        >
-          One lowercase letter
-        </li>
-        <li
-          className={passwordRequirements.hasNumbers ? "requirement-met" : ""}
-        >
-          One number
-        </li>
-        <li
-          className={
-            passwordRequirements.hasSpecialChar ? "requirement-met" : ""
-          }
-        >
-          One special character
-        </li>
-      </ul>
-
-      <input
-        type="password"
-        placeholder="Confirm Password"
-        className="input-field"
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-      />
-
-      <div className="links-container">
-        <div to="/" className="link" onClick={() => setstate(0)}>
-          Already have an account?
+      <form onSubmit={handleSignup}>
+        <div className="input-group">
+          <input 
+            type="text" 
+            name="firstName"
+            placeholder="First Name" 
+            className="input-field"
+            value={formData.firstName}
+            onChange={handleInputChange}
+            required
+          />
+          <input 
+            type="text" 
+            name="lastName"
+            placeholder="Last Name" 
+            className="input-field"
+            value={formData.lastName}
+            onChange={handleInputChange}
+            required
+          />
         </div>
-      </div>
 
-      <button className="login-button">Create Account</button>
+        <input 
+          type="email" 
+          name="email"
+          placeholder="Email Address" 
+          className="input-field"
+          value={formData.email}
+          onChange={handleInputChange}
+          required
+        />
+
+        <input
+          type="password"
+          name="password"
+          placeholder="Create Password"
+          className="input-field"
+          value={formData.password}
+          onChange={handleInputChange}
+          required
+        />
+
+        <ul className="password-requirements">
+          <li className={passwordRequirements.isLongEnough ? "requirement-met" : ""}>
+            At least 8 characters
+          </li>
+          <li className={passwordRequirements.hasUpperCase ? "requirement-met" : ""}>
+            One uppercase letter
+          </li>
+          <li className={passwordRequirements.hasLowerCase ? "requirement-met" : ""}>
+            One lowercase letter
+          </li>
+          <li className={passwordRequirements.hasNumbers ? "requirement-met" : ""}>
+            One number
+          </li>
+          <li className={passwordRequirements.hasSpecialChar ? "requirement-met" : ""}>
+            One special character
+          </li>
+        </ul>
+
+        <input
+          type="password"
+          name="confirmPassword"
+          placeholder="Confirm Password"
+          className="input-field"
+          value={formData.confirmPassword}
+          onChange={handleInputChange}
+          required
+        />
+
+        <div className="links-container">
+          <div className="link" onClick={() => setstate(0)}>
+            Already have an account?
+          </div>
+        </div>
+
+        <button 
+          type="submit" 
+          className="login-button"
+          disabled={loading}
+        >
+          {loading ? 'Creating Account...' : 'Create Account'}
+        </button>
+      </form>
     </div>
   );
 };
 
 const LoginSection = ({setstate}) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${BASE_URL}/travel_buddy/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store user data and token
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('isLoggedIn', 'true');
+        
+        // Redirect to dashboard or home
+        navigate('/dashboard');
+      } else {
+        alert(data.message || 'Login failed');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="form-section">
       <div className="form-content">
-        <input
-          type="email"
-          placeholder="chatterjee.sangram07@gmail.com"
-          className="input-field"
-        />
-        <input
-          type="password"
-          placeholder="**********"
-          className="input-field"
-        />
-        <div className="links-container">
-          <Link to="/forgot-password" className="link">
-            Forget Password
-          </Link>
-          <div to="/signup" className="link" onClick={() => setstate(1)}>
-            Create Account
+        <form onSubmit={handleLogin}>
+          <input
+            type="email"
+            placeholder="Enter your email"
+            className="input-field"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Enter your password"
+            className="input-field"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <div className="links-container">
+            <Link to="/forgot-password" className="link">
+              Forget Password
+            </Link>
+            <div className="link" onClick={() => setstate(1)}>
+              Create Account
+            </div>
           </div>
-        </div>
-        <button className="login-button">Log in</button>
+          <button 
+            type="submit" 
+            className="login-button"
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Log in'}
+          </button>
+        </form>
 
         <div className="divider">
           <hr className="divider-line" />
@@ -120,14 +259,7 @@ const LoginSection = ({setstate}) => {
           <hr className="divider-line" />
         </div>
 
-        <button className="google-login-button">
-          <img
-            src="/src/assets/google-icon.svg"
-            alt="Google Logo"
-            className="google-icon"
-          />
-          Sign in with Google
-        </button>
+        <GoogleAuth />
       </div>
     </div>
   );
