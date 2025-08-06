@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const localDB = require('../Config/localDatabase');
+const db = require('../Config/database'); // Use database switcher
 
 // JWT Secret (in production, use environment variable)
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -40,7 +40,7 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Create new user
-    const result = localDB.createUser({
+    const result = await db.createUser({
       name,
       email,
       password: hashedPassword
@@ -94,7 +94,7 @@ const loginUser = async (req, res) => {
     }
 
     // Find user by email
-    const user = localDB.getUserByEmail(email);
+    const user = await db.getUserByEmail(email);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -144,7 +144,7 @@ const getUserProfile = async (req, res) => {
     // User info is added to req by auth middleware
     const userId = req.user.userId;
 
-    const user = localDB.getUserById(userId);
+    const user = await db.getUserById(userId);
     if (!user) {
       return res.status(404).json({
         success: false,

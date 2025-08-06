@@ -1,9 +1,12 @@
+// Load environment variables
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const loginRoutes = require('./Routes/routes');
 // const oauthRoutes = require('./Routes/oauthRoutes');
-const localDB = require('./Config/localDatabase');
+const db = require('./Config/database'); // Use database switcher
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -55,14 +58,22 @@ app.get('/', (req, res) => {
 });
 
 // Health check route
-app.get('/health', (req, res) => {
-  const users = localDB.getAllUsers();
-  res.json({
-    status: 'healthy',
-    database: 'connected',
-    userCount: users.length,
-    timestamp: new Date().toISOString()
-  });
+app.get('/health', async (req, res) => {
+  try {
+    const users = await db.getAllUsers();
+    res.json({
+      status: 'healthy',
+      database: process.env.DATABASE_TYPE || 'local',
+      userCount: users.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Database connection failed',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Routes
