@@ -1,19 +1,54 @@
-// App/Middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
-const SECRET_KEY = 'mySecretKey123';
+
+// JWT Secret (should match the one in loginController)
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 const verifyToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader?.split(' ')[1]; // Expect "Bearer <token>"
-
-  if (!token) return res.status(401).json({ message: 'No token provided' });
-
   try {
-    const decoded = jwt.verify(token, SECRET_KEY);
-    req.user = decoded; // Add user data to request
+    const authHeader = req.headers['authorization'];
+    
+    if (!authHeader) {
+      return res.status(401).json({
+        success: false,
+        message: 'No authorization header provided'
+      });
+    }
+
+    const token = authHeader.startsWith('Bearer ') 
+      ? authHeader.slice(7) 
+      : authHeader;
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided'
+      });
+    }
+
+    // Verify the token
+    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Add user info to request object
+    req.user = decoded;
+    
     next();
-  } catch (err) {
-    return res.status(403).json({ message: 'Invalid token' });
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token has expired'
+      });
+    } else if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: 'Token verification failed'
+      });
+    }
   }
 };
 

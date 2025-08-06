@@ -47,16 +47,23 @@ const SignupSection = ({setstate}) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          username: formData.email, 
+          name: `${formData.firstName} ${formData.lastName}`.trim(),
+          email: formData.email, 
           password: formData.password 
         }),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        alert('Account created successfully! Please login.');
-        setstate(0); // Switch to login form
+      if (data.success) {
+        alert('Account created successfully! You are now logged in.');
+        // Store user data and token
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('isLoggedIn', 'true');
+        
+        // Redirect to dashboard
+        navigate('/dashboard');
       } else {
         alert(data.message || 'Registration failed');
       }
@@ -73,7 +80,7 @@ const SignupSection = ({setstate}) => {
     const hasLowerCase = /[a-z]/.test(pass);
     const hasNumbers = /\d/.test(pass);
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
-    const isLongEnough = pass.length >= 8;
+    const isLongEnough = pass.length >= 6; // Match backend requirement
 
     return {
       hasUpperCase,
@@ -132,7 +139,7 @@ const SignupSection = ({setstate}) => {
 
         <ul className="password-requirements">
           <li className={passwordRequirements.isLongEnough ? "requirement-met" : ""}>
-            At least 8 characters
+            At least 6 characters
           </li>
           <li className={passwordRequirements.hasUpperCase ? "requirement-met" : ""}>
             One uppercase letter
@@ -192,12 +199,12 @@ const LoginSection = ({setstate}) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username: email, password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (data.success) {
         // Store user data and token
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));

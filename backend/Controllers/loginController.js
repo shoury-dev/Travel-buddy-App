@@ -1,45 +1,178 @@
-// App/Controllers/loginController.js
-const { User } = require('../Modules/userSchema');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const localDB = require('../Config/localDatabase');
 
-const SECRET_KEY = 'mySecretKey123'; // Use environment variables in production
+// JWT Secret (in production, use environment variable)
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-exports.register = async (req, res) => {
-  const { username, password } = req.body;
-
+// Register new user
+const registerUser = async (req, res) => {
   try {
-    const existing = await User.findOne({ username });
-    if (existing) return res.status(400).json({ message: 'User already exists' });
+    const { name, email, password } = req.body;
 
-    const hashedPassword = await bcrypt.hash(password, 10); // Hashing added ✅
-    const newUser = new User({ username, password: hashedPassword });
+    // Validate input
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide name, email, and password'
+      });
+    }
 
-    await newUser.save();
-    res.status(201).json({ message: 'User registered successfully' });
-  } catch (err) {
-    res.status(500).json({ error: 'Error registering user' });
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address'
+      });
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long'
+      });
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create new user
+    const result = localDB.createUser({
+      name,
+      email,
+      password: hashedPassword
+    });
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: result.user.id, email: result.user.email },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      token,
+      user: {
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email
+      }
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
   }
 };
 
-exports.login = async (req, res) => {
-  const { username, password } = req.body;
-
+// Login user
+const loginUser = async (req, res) => {
   try {
-    const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ message: 'Invalid username' });
+    const { email, password } = req.body;
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json({ message: 'Incorrect password' });
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email and password'
+      });
+    }
 
+    // Find user by email
+    const user = localDB.getUserByEmail(email);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Generate JWT token
     const token = jwt.sign(
-      { id: user._id, username: user.username },
-      SECRET_KEY,
-      { expiresIn: '1h' }
+      { userId: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '24h' }
     );
 
-    res.status(200).json({ message: 'Login successful', token });
-  } catch (err) {
-    res.status(500).json({ error: 'Login failed' });
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
   }
+};
+
+// Get user profile
+const getUserProfile = async (req, res) => {
+  try {
+    // User info is added to req by auth middleware
+    const userId = req.user.userId;
+
+    const user = localDB.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        createdAt: user.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Profile fetch error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  getUserProfile
 };

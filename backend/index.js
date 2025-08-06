@@ -1,46 +1,102 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const passport = require('passport');
+const path = require('path');
 const loginRoutes = require('./Routes/routes');
-const oauthRoutes = require('./Routes/oauthRoutes');
+// const oauthRoutes = require('./Routes/oauthRoutes');
+const localDB = require('./Config/localDatabase');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  credentials: true
+}));
 app.use(express.json());
-app.use(passport.initialize());
+app.use(express.urlencoded({ extended: true }));
 
-// MongoDB connection - using MongoDB Atlas for cloud database
-// Replace this with your MongoDB Atlas connection string
-const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://demo:demo123@cluster0.mongodb.net/travelbuddy?retryWrites=true&w=majority';
-
-mongoose.connect(mongoUri)
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
-    console.log('Continuing without database - some features may not work');
-  });
+// Initialize local database
+console.log('Initializing local database...');
 
 // Root route
 app.get('/', (req, res) => {
   res.json({
     message: 'Travel Buddy API Server is running!',
+    status: 'Online',
+    database: 'Local JSON Database',
     endpoints: {
-      auth: '/auth/google - Google OAuth login',
-      register: '/travel_buddy/register - User registration',
-      login: '/travel_buddy/login - User login',
-      profile: '/travel_buddy/profile - Get user profile (requires token)'
+      register: 'POST /travel_buddy/register - User registration',
+      login: 'POST /travel_buddy/login - User login',
+      profile: 'GET /travel_buddy/profile - Get user profile (requires token)',
+      dashboard: 'GET /travel_buddy/dashboard - Access dashboard (requires token)',
+      googleAuth: 'GET /auth/google - Google OAuth login'
+    },
+    usage: {
+      register: {
+        method: 'POST',
+        url: '/travel_buddy/register',
+        body: {
+          name: 'John Doe',
+          email: 'john@example.com',
+          password: 'password123'
+        }
+      },
+      login: {
+        method: 'POST',
+        url: '/travel_buddy/login',
+        body: {
+          email: 'john@example.com',
+          password: 'password123'
+        }
+      }
     }
+  });
+});
+
+// Health check route
+app.get('/health', (req, res) => {
+  const users = localDB.getAllUsers();
+  res.json({
+    status: 'healthy',
+    database: 'connected',
+    userCount: users.length,
+    timestamp: new Date().toISOString()
   });
 });
 
 // Routes
 app.use('/travel_buddy', loginRoutes);
-app.use('/auth', oauthRoutes);
+// app.use('/auth', oauthRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found',
+    availableRoutes: [
+      'POST /travel_buddy/register',
+      'POST /travel_buddy/login',
+      'GET /travel_buddy/profile',
+      'GET /travel_buddy/dashboard',
+      'GET /auth/google'
+    ]
+  });
+});
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Travel Buddy Server running on http://localhost:${PORT}`);
+  console.log(`📊 Database: Local JSON file`);
+  console.log(`🔗 Frontend: http://localhost:5173`);
+  console.log(`📚 API Documentation: http://localhost:${PORT}`);
 });
