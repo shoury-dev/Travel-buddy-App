@@ -15,6 +15,14 @@
       "password": "$2b$10$iXlQ3n3bK47Dx6e1CqgaROkzrItovl.vfTFKvPkXy5Pnk2/7HVJhK",
       "createdAt": "2025-08-06T12:18:58.055Z",
       "updatedAt": "2025-08-06T12:18:58.055Z"
+    },
+    {
+      "id": "1754582605495ejmt0ppsz",
+      "name": "Satwick sinha",
+      "email": "22051614@kiit.ac.in",
+      "password": "$2b$10$rl7zNruPGOISkd.KRr5iuuVhfG7rl5F/6LJ5uZ0SCgwTW2Un7jpEe",
+      "createdAt": "2025-08-07T16:03:25.495Z",
+      "updatedAt": "2025-08-07T16:03:25.495Z"
     }
   ]
 }

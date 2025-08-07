@@ -33,7 +33,7 @@ const Dashboard = () => {
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ 
-        background: '#f8f9fa', 
+        background: '#65a4e2ff', 
         padding: '20px', 
         borderRadius: '8px',
         marginBottom: '20px'
@@ -56,7 +56,7 @@ const Dashboard = () => {
       </div>
       
       <div style={{ 
-        background: '#e9ecef', 
+        background: '#356596ff', 
         padding: '20px', 
         borderRadius: '8px' 
       }}>
@@ -72,7 +72,7 @@ const Dashboard = () => {
         <div style={{ marginTop: '20px' }}>
           <h3>User Information:</h3>
           <pre style={{ 
-            background: '#fff', 
+            background: '#65a4e2ff', 
             padding: '10px', 
             borderRadius: '4px',
             overflow: 'auto'
