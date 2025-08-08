@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -29,7 +29,9 @@ const Dashboard = () => {
   if (!user) {
     return <div>Loading...</div>;
   }
-
+  const goToBuddyPage = () => {
+       navigate('/TravelDating');
+      };
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ 
@@ -51,10 +53,27 @@ const Dashboard = () => {
             cursor: 'pointer'
           }}
         >
+
           Logout
         </button>
       </div>
       
+
+  
+        <button 
+           onClick={goToBuddyPage}
+          style={{
+           background: '#467667ff',
+           color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+          >
+          Buddy
+        </button>
+    
       <div style={{ 
         background: '#356596ff', 
         padding: '20px', 

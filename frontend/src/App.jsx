@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
+import TravelDating from './pages/travel-dating-react';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/TravelDating" element={<TravelDating />} />
       </Routes>
       <ToastContainer 
         position="top-right"
