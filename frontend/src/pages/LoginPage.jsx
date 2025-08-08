@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import BASE_URL from "../apis";
 import GoogleAuth from "../components/googleOauth";
 import "./LoginPage.css";
 
-const SignupSection = ({setstate}) => {
+const SignupSection = ({ setstate }) => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -24,7 +24,7 @@ const SignupSection = ({setstate}) => {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords don't match!");
       return;
@@ -32,7 +32,7 @@ const SignupSection = ({setstate}) => {
 
     const passwordRequirements = checkPasswordStrength(formData.password);
     const isValidPassword = Object.values(passwordRequirements).every(req => req);
-    
+
     if (!isValidPassword) {
       alert("Password doesn't meet all requirements!");
       return;
@@ -46,10 +46,10 @@ const SignupSection = ({setstate}) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: `${formData.firstName} ${formData.lastName}`.trim(),
-          email: formData.email, 
-          password: formData.password 
+          email: formData.email,
+          password: formData.password
         }),
       });
 
@@ -57,12 +57,9 @@ const SignupSection = ({setstate}) => {
 
       if (data.success) {
         alert('Account created successfully! You are now logged in.');
-        // Store user data and token
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('isLoggedIn', 'true');
-        
-        // Redirect to dashboard
         navigate('/dashboard');
       } else {
         alert(data.message || 'Registration failed');
@@ -80,7 +77,7 @@ const SignupSection = ({setstate}) => {
     const hasLowerCase = /[a-z]/.test(pass);
     const hasNumbers = /\d/.test(pass);
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
-    const isLongEnough = pass.length >= 6; // Match backend requirement
+    const isLongEnough = pass.length >= 6;
 
     return {
       hasUpperCase,
@@ -95,21 +92,28 @@ const SignupSection = ({setstate}) => {
 
   return (
     <div className="form-content">
+      <div
+        className="link"
+        onClick={() => setstate(0)}
+        style={{ cursor: 'pointer', marginBottom: '10px' }}
+      >
+        ← Back to Login
+      </div>
       <form onSubmit={handleSignup}>
         <div className="input-group">
-          <input 
-            type="text" 
+          <input
+            type="text"
             name="firstName"
-            placeholder="First Name" 
+            placeholder="First Name"
             className="input-field"
             value={formData.firstName}
             onChange={handleInputChange}
             required
           />
-          <input 
-            type="text" 
+          <input
+            type="text"
             name="lastName"
-            placeholder="Last Name" 
+            placeholder="Last Name"
             className="input-field"
             value={formData.lastName}
             onChange={handleInputChange}
@@ -117,10 +121,10 @@ const SignupSection = ({setstate}) => {
           />
         </div>
 
-        <input 
-          type="email" 
+        <input
+          type="email"
           name="email"
-          placeholder="Email Address" 
+          placeholder="Email Address"
           className="input-field"
           value={formData.email}
           onChange={handleInputChange}
@@ -171,8 +175,8 @@ const SignupSection = ({setstate}) => {
           </div>
         </div>
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className="login-button"
           disabled={loading}
         >
@@ -183,7 +187,8 @@ const SignupSection = ({setstate}) => {
   );
 };
 
-const LoginSection = ({setstate}) => {
+
+const LoginSection = ({ setstate }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -205,12 +210,9 @@ const LoginSection = ({setstate}) => {
       const data = await response.json();
 
       if (data.success) {
-        // Store user data and token
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('isLoggedIn', 'true');
-        
-        // Redirect to dashboard or home
         navigate('/dashboard');
       } else {
         alert(data.message || 'Login failed');
@@ -244,15 +246,15 @@ const LoginSection = ({setstate}) => {
             required
           />
           <div className="links-container">
-            <Link to="/forgot-password" className="link">
+            <div className="link" onClick={() => setstate(2)}>
               Forget Password
-            </Link>
+            </div>
             <div className="link" onClick={() => setstate(1)}>
               Create Account
             </div>
           </div>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="login-button"
             disabled={loading}
           >
@@ -267,6 +269,61 @@ const LoginSection = ({setstate}) => {
         </div>
 
         <GoogleAuth />
+      </div>
+    </div>
+  );
+};
+
+const ForgotPasswordSection = ({ setstate }) => {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleReset = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${BASE_URL}/travel_buddy/forgot-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      alert(data.message || 'If this email exists, a reset link has been sent.');
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      alert('Error sending reset link. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="form-section">
+      <div className="form-content">
+        <div className="link" onClick={() => setstate(0)} style={{ cursor: 'pointer', marginBottom: '10px' }}>
+          ← Back to Login
+        </div>
+        <form onSubmit={handleReset}>
+          <input
+            type="email"
+            placeholder="Enter your email"
+            className="input-field"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <button
+            type="submit"
+            className="login-button"
+            disabled={loading}
+          >
+            {loading ? 'Sending...' : 'Send Reset Link'}
+          </button>
+        </form>
       </div>
     </div>
   );
@@ -291,11 +348,9 @@ const LoginPage = () => {
           </div>
         </div>
 
-        {state === 0
-        ? <LoginSection setstate={setState}/>
-        : <SignupSection setstate={setState} />
-        }
-
+        {state === 0 && <LoginSection setstate={setState} />}
+        {state === 1 && <SignupSection setstate={setState} />}
+        {state === 2 && <ForgotPasswordSection setstate={setState} />}
       </div>
     </div>
   );
